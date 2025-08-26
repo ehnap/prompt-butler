@@ -28,7 +28,7 @@ on:
           - 修复了已知问题
           
           ### 安装方法
-          1. 下载 `prompt-butler-extension.zip` 文件
+          1. 下载对应版本的 `prompt-butler-extension-版本号.zip` 文件
           2. 解压到本地文件夹
           3. 打开 Chrome 浏览器，访问 `chrome://extensions/`
           4. 开启右上角的"开发者模式"
@@ -63,15 +63,21 @@ jobs:
     - name: Create extension package
       run: |
         cd dist
-        zip -r ../prompt-butler-extension.zip .
+        zip -r ../prompt-butler-extension-${{ github.event.inputs.tag_name }}.zip .
         cd ..
         
-    - name: Create or update tag
+    - name: Check if tag exists
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git tag -f ${{ github.event.inputs.tag_name }}
-        git push origin ${{ github.event.inputs.tag_name }} --force
+        # 检查标签是否存在于远程仓库
+        if ! git ls-remote --tags origin | grep -q "refs/tags/${{ github.event.inputs.tag_name }}$"; then
+          echo "❌ 标签 ${{ github.event.inputs.tag_name }} 不存在"
+          echo "请先创建标签："
+          echo "  git tag ${{ github.event.inputs.tag_name }}"
+          echo "  git push origin ${{ github.event.inputs.tag_name }}"
+          exit 1
+        else
+          echo "✅ 标签 ${{ github.event.inputs.tag_name }} 已存在，继续构建..."
+        fi
       
     - name: Create Release
       id: create_release
@@ -91,6 +97,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./prompt-butler-extension.zip
-        asset_name: prompt-butler-extension.zip
+        asset_path: ./prompt-butler-extension-${{ github.event.inputs.tag_name }}.zip
+        asset_name: prompt-butler-extension-${{ github.event.inputs.tag_name }}.zip
         asset_content_type: application/zip
