@@ -55,3 +55,8 @@ key.pem
 # Temporary files
 tmp/
 temp/
+temp_status.txt
+
+# Scripts should be executable
+!scripts/*.sh
+!scripts/*.bat

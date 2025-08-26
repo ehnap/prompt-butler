@@ -1,0 +1,96 @@
+name: Build and Release Chrome Extension
+
+on:
+  workflow_dispatch:  # 只允许手动触发
+    inputs:
+      tag_name:
+        description: '版本标签 (例如: v1.0.1)'
+        required: true
+        type: string
+      release_title:
+        description: '发布标题 (例如: Prompt Butler v1.0.1)'
+        required: true
+        type: string
+      release_body:
+        description: '发布说明 (支持 Markdown 格式)'
+        required: true
+        type: string
+        default: |
+          ## 更新内容
+          
+          ### 新功能
+          - 添加了新功能描述
+          
+          ### 改进
+          - 改进了某些功能
+          
+          ### 修复
+          - 修复了已知问题
+          
+          ### 安装方法
+          1. 下载 `prompt-butler-extension.zip` 文件
+          2. 解压到本地文件夹
+          3. 打开 Chrome 浏览器，访问 `chrome://extensions/`
+          4. 开启右上角的"开发者模式"
+          5. 点击"加载已解压的扩展程序"
+          6. 选择解压后的文件夹
+      prerelease:
+        description: '是否为预发布版本'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build extension
+      run: node build-optimized.js
+      
+    - name: Create extension package
+      run: |
+        cd dist
+        zip -r ../prompt-butler-extension.zip .
+        cd ..
+        
+    - name: Create or update tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -f ${{ github.event.inputs.tag_name }}
+        git push origin ${{ github.event.inputs.tag_name }} --force
+      
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.inputs.tag_name }}
+        release_name: ${{ github.event.inputs.release_title }}
+        body: ${{ github.event.inputs.release_body }}
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease }}
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./prompt-butler-extension.zip
+        asset_name: prompt-butler-extension.zip
+        asset_content_type: application/zip
