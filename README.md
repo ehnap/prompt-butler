@@ -31,7 +31,7 @@ AI提示词管理助手 - 高效管理和使用AI提示词的Chrome扩展程序�
 
 1. 克隆项目：
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ehnap/prompt-butler
    cd prompt-butler
    ```
 

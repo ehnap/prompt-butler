@@ -1,11 +1,11 @@
 body {
-    width: 400px;
-    height: 500px;
+    width: 420px;
+    height: 600px;
     margin: 0;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f8f9fa;
-    overflow: hidden;
+    background: #ffffff;
+    overflow-x: hidden;
 }
 
 .container {
@@ -60,8 +60,128 @@ body {
 }
 
 .tag-cloud {
-    margin-bottom: 16px;
-    min-height: 20px;
+  position: relative;
+  margin-bottom: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+}
+
+.tag-cloud-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e9ecef;
+  background: #ffffff;
+}
+
+.tag-cloud-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6c757d;
+  margin: 0;
+  flex: 1;
+}
+
+.tag-cloud-toggle {
+  padding: 4px 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 44px;
+  margin: 2px 8px 2px 8px;
+}
+
+.tag-cloud-toggle:hover {
+  background: #0056b3;
+  transform: scale(1.05);
+}
+
+.tag-cloud-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.tag-cloud-container.collapsed {
+  max-height: 38px;
+  overflow: hidden;
+}
+
+.tag-cloud-container.expanded {
+  max-height: none;
+  overflow: visible;
+}
+
+.tag-cloud-container.collapsed::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15px;
+  background: linear-gradient(transparent, #f8f9fa);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tag-cloud-fade {
+  display: none;
+}
+
+.tag-cloud-fade.hidden {
+  opacity: 0;
+}
+
+.tag-cloud-container.collapsed {
+    max-height: 32px; /* 约一行的高度 */
+}
+
+.tag-cloud-container.expanded {
+    max-height: none;
+}
+
+.tag-cloud-toggle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #6c757d;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.tag-cloud-toggle:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.tag-cloud-fade {
+    position: absolute;
+    right: 40px;
+    top: 0;
+    height: 32px;
+    width: 60px;
+    background: linear-gradient(to right, transparent, #f8f9fa);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.tag-cloud-container.expanded .tag-cloud-fade {
+    display: none;
 }
 
 .tag {

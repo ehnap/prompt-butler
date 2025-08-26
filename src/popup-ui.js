@@ -85,6 +85,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
   
+  // 标签云展开状态
+  let isTagCloudExpanded = false;
+  
   // 渲染标签云
   function renderTagCloud() {
     const allTags = new Set();
@@ -94,11 +97,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const sortedTags = Array.from(allTags).sort();
     
-    tagCloud.innerHTML = sortedTags.map(tag => {
+    // 创建标签HTML
+    const tagsHtml = sortedTags.map(tag => {
       const count = allPrompts.filter(prompt => prompt.tags.includes(tag)).length;
       const isActive = activeTagFilters.has(tag);
       return `<span class="tag-filter ${isActive ? 'active' : ''}" data-tag="${tag}">${tag} (${count})</span>`;
-    }).join('') + (activeTagFilters.size > 0 ? '<button class="clear-filters" id="clearFilters">清除筛选</button>' : '');
+    }).join('');
+    
+    // 添加清除筛选按钮
+    const clearFiltersHtml = activeTagFilters.size > 0 ? '<button class="clear-filters" id="clearFilters">清除筛选</button>' : '';
+    
+    // 检查是否需要折叠按钮
+    const needsToggle = sortedTags.length > 5; // 超过5个标签时显示折叠按钮
+    
+    tagCloud.innerHTML = `
+      ${needsToggle ? `
+        <div class="tag-cloud-header">
+          <span class="tag-cloud-title">标签筛选 (${sortedTags.length})</span>
+          <button class="tag-cloud-toggle" id="tagCloudToggle">
+            ${isTagCloudExpanded ? '收起' : '展开'}
+          </button>
+        </div>
+      ` : ''}
+      <div class="tag-cloud-container ${isTagCloudExpanded ? 'expanded' : 'collapsed'}" id="tagCloudContainer">
+        ${tagsHtml}${clearFiltersHtml}
+      </div>
+    `;
     
     // 绑定标签点击事件
     tagCloud.querySelectorAll('.tag-filter').forEach(tagEl => {
@@ -113,6 +137,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (clearBtn) {
       clearBtn.addEventListener('click', clearAllFilters);
     }
+    
+    // 绑定折叠/展开按钮
+    const toggleBtn = document.getElementById('tagCloudToggle');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', toggleTagCloud);
+    }
+  }
+  
+  // 切换标签云展开/收起状态
+  function toggleTagCloud() {
+    isTagCloudExpanded = !isTagCloudExpanded;
+    renderTagCloud(); // 重新渲染以更新状态
   }
   
   // 切换标签筛选
@@ -404,8 +440,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 400px;
-      max-height: 500px;
+      width: 420px;
+      max-height: 600px;
       background: white;
       border-radius: 8px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -714,7 +750,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 400px;
+      width: 420px;
       background: white;
       border-radius: 8px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);

@@ -60,3 +60,5 @@ temp_status.txt
 # Scripts should be executable
 !scripts/*.sh
 !scripts/*.bat
+
+.codebuddy/*
