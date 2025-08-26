@@ -62,6 +62,12 @@ copyFile('manifest.json', 'dist/manifest.json');
 copyFile('public/background.js', 'dist/background.js');
 copyFile('public/content.js', 'dist/content.js');
 
+// 5. 复制图标文件
+copyFile('resource/logo16.png', 'dist/logo16.png');
+copyFile('resource/logo32.png', 'dist/logo32.png');
+copyFile('resource/logo48.png', 'dist/logo48.png');
+copyFile('resource/logo128.png', 'dist/logo128.png');
+
 console.log('\n🎉 Chrome扩展构建完成！');
 console.log('📁 插件文件位于 dist/ 目录');
 console.log('🔧 在Chrome中加载 dist/ 目录作为未打包的扩展程序');
