@@ -184,7 +184,7 @@ function findAndFocusInput() {
 }
 
 // 插入文本到输入框
-function insertTextToInput(text) {
+async function insertTextToInput(text) {
   const inputElement = findAndFocusInput();
   
   if (inputElement) {
@@ -210,14 +210,37 @@ function insertTextToInput(text) {
       inputElement.setSelectionRange(text.length, text.length);
     }
     
-    showNotification('提示词已插入到输入框');
+    showNotification('已插入到输入框');
   } else {
     // 如果找不到输入框，复制到剪贴板
-    navigator.clipboard.writeText(text).then(() => {
-      showNotification('未找到输入框，提示词已复制到剪贴板');
-    }).catch(() => {
-      showNotification('插入失败，请手动粘贴');
-    });
+    await copyToClipboard(text);
+  }
+}
+
+// 复制到剪贴板
+async function copyToClipboard(content) {
+  try {
+    await navigator.clipboard.writeText(content);
+    showNotification('已复制到剪贴板');
+  } catch (error) {
+    console.error('复制到剪贴板失败:', error);
+    // 降级方案：使用传统方法
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = content;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showNotification('已复制到剪贴板');
+    } catch (fallbackError) {
+      console.error('降级复制方案也失败:', fallbackError);
+      showNotification('复制失败，请手动复制');
+    }
   }
 }
 
@@ -260,8 +283,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   if (request.action === 'insertText') {
     try {
-      insertTextToInput(request.text);
-      sendResponse({ success: true });
+      insertTextToInput(request.text).then(() => {
+        sendResponse({ success: true });
+      }).catch((error) => {
+        console.error('插入文本失败:', error);
+        sendResponse({ success: false, error: error.message });
+      });
     } catch (error) {
       console.error('插入文本失败:', error);
       sendResponse({ success: false, error: error.message });

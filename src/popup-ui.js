@@ -245,49 +245,119 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (typeof chrome !== 'undefined' && chrome.tabs) {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
-        await chrome.scripting.executeScript({
+        // 执行脚本检查是否有可用的输入框
+        const results = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
           func: (text) => {
-            // 查找活动的输入元素
-            let activeElement = document.activeElement;
-            
-            // 如果没有活动元素，尝试查找页面上的输入框
-            if (!activeElement || (activeElement.tagName !== 'INPUT' && activeElement.tagName !== 'TEXTAREA' && !activeElement.contentEditable)) {
-              const inputs = document.querySelectorAll('input[type="text"], input[type="search"], input[type="email"], textarea, [contenteditable="true"]');
-              if (inputs.length > 0) {
-                activeElement = inputs[0];
-                activeElement.focus();
+            // 查找可用的输入元素
+            function findAvailableInput() {
+              // 首先检查当前活动元素
+              let activeElement = document.activeElement;
+              if (activeElement && (
+                activeElement.tagName === 'INPUT' || 
+                activeElement.tagName === 'TEXTAREA' || 
+                activeElement.contentEditable === 'true'
+              )) {
+                return activeElement;
               }
+              
+              // 查找页面上可见的输入框
+              const inputSelectors = [
+                'textarea:not([readonly]):not([disabled])',
+                'input[type="text"]:not([readonly]):not([disabled])',
+                'input[type="search"]:not([readonly]):not([disabled])',
+                'input[type="email"]:not([readonly]):not([disabled])',
+                '[contenteditable="true"]'
+              ];
+              
+              for (const selector of inputSelectors) {
+                const elements = document.querySelectorAll(selector);
+                for (const element of elements) {
+                  const rect = element.getBoundingClientRect();
+                  const style = window.getComputedStyle(element);
+                  // 检查元素是否可见且可交互
+                  if (rect.width > 0 && rect.height > 0 && 
+                      style.visibility !== 'hidden' && 
+                      style.display !== 'none') {
+                    return element;
+                  }
+                }
+              }
+              
+              return null;
             }
             
-            if (activeElement) {
-              if (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') {
-                activeElement.value = text;
-                activeElement.dispatchEvent(new Event('input', { bubbles: true }));
-                activeElement.dispatchEvent(new Event('change', { bubbles: true }));
-              } else if (activeElement.contentEditable === 'true') {
-                activeElement.textContent = text;
-                activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+            const inputElement = findAvailableInput();
+            
+            if (inputElement) {
+              // 找到输入框，插入文本
+              inputElement.focus();
+              
+              if (inputElement.tagName === 'INPUT' || inputElement.tagName === 'TEXTAREA') {
+                inputElement.value = text;
+                inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                inputElement.dispatchEvent(new Event('change', { bubbles: true }));
+              } else if (inputElement.contentEditable === 'true') {
+                inputElement.textContent = text;
+                inputElement.dispatchEvent(new Event('input', { bubbles: true }));
               }
+              
+              return { success: true, hasInput: true };
+            } else {
+              // 没有找到输入框，返回失败
+              return { success: false, hasInput: false };
             }
           },
           args: [content]
         });
         
-        // 延迟关闭弹窗
-        setTimeout(() => {
-          window.close();
-        }, 500);
+        const result = results[0].result;
+        
+        if (result.success && result.hasInput) {
+          // 成功插入到输入框
+          showNotification('已插入到输入框');
+          setTimeout(() => {
+            window.close();
+          }, 1000);
+        } else {
+          // 没有找到输入框，复制到剪贴板
+          await copyToClipboard(content);
+        }
       } else {
-        console.log('插入内容:', content);
-        alert('已复制到剪贴板');
+        // 非Chrome扩展环境，直接复制到剪贴板
+        await copyToClipboard(content);
       }
     } catch (error) {
       console.error('插入提示词失败:', error);
-      // 降级处理：复制到剪贴板
-      navigator.clipboard.writeText(content).then(() => {
-        alert('已复制到剪贴板');
-      });
+      // 出错时降级处理：复制到剪贴板
+      await copyToClipboard(content);
+    }
+  }
+  
+  // 复制到剪贴板
+  async function copyToClipboard(content) {
+    try {
+      await navigator.clipboard.writeText(content);
+      showNotification('已复制到剪贴板');
+    } catch (error) {
+      console.error('复制到剪贴板失败:', error);
+      // 降级方案：使用传统方法
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification('已复制到剪贴板');
+      } catch (fallbackError) {
+        console.error('降级复制方案也失败:', fallbackError);
+        showNotification('复制失败，请手动复制');
+      }
     }
   }
   
